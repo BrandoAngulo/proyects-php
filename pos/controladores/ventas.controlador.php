@@ -1,41 +1,45 @@
 <?php
 
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+use Mike42\Escpos\CapabilityProfile;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\EscposImage;
 use Mike42\Escpos\PrintConnectors\FilePrintConnector;
-use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
 
-class ControladorVentas{
+
+class ControladorVentas
+{
 
 	/*=============================================
 	MOSTRAR VENTAS
 	=============================================*/
 
-	static public function ctrMostrarVentas($item, $valor){
+	static public function ctrMostrarVentas($item, $valor)
+	{
 
 		$tabla = "ventas";
 
 		$respuesta = ModeloVentas::mdlMostrarVentas($tabla, $item, $valor);
 
 		return $respuesta;
-
 	}
 
 	/*=============================================
 	CREAR VENTA
 	=============================================*/
 
-	static public function ctrCrearVenta(){
+	static public function ctrCrearVenta()
+	{
 
-		if(isset($_POST["nuevaVenta"])){
+		if (isset($_POST["nuevaVenta"])) {
 
 			/*=============================================
 			ACTUALIZAR LAS COMPRAS DEL CLIENTE Y REDUCIR EL STOCK Y AUMENTAR LAS VENTAS DE LOS PRODUCTOS
 			=============================================*/
 
-			if($_POST["listaProductos"] == ""){
+			if ($_POST["listaProductos"] == "") {
 
-					echo'<script>
+				echo '<script>
 
 				swal({
 					  type: "error",
@@ -62,26 +66,25 @@ class ControladorVentas{
 
 			foreach ($listaProductos as $key => $value) {
 
-			   array_push($totalProductosComprados, $value["cantidad"]);
-				
-			   $tablaProductos = "productos";
+				array_push($totalProductosComprados, $value["cantidad"]);
 
-			    $item = "id";
-			    $valor = $value["id"];
-			    $orden = "id";
+				$tablaProductos = "productos";
 
-			    $traerProducto = ModeloProductos::mdlMostrarProductos($tablaProductos, $item, $valor, $orden);
+				$item = "id";
+				$valor = $value["id"];
+				$orden = "id";
+
+				$traerProducto = ModeloProductos::mdlMostrarProductos($tablaProductos, $item, $valor, $orden);
 
 				$item1a = "ventas";
 				$valor1a = $value["cantidad"] + $traerProducto["ventas"];
 
-			    $nuevasVentas = ModeloProductos::mdlActualizarProducto($tablaProductos, $item1a, $valor1a, $valor);
+				$nuevasVentas = ModeloProductos::mdlActualizarProducto($tablaProductos, $item1a, $valor1a, $valor);
 
 				$item1b = "stock";
 				$valor1b = $value["stock"];
 
 				$nuevoStock = ModeloProductos::mdlActualizarProducto($tablaProductos, $item1b, $valor1b, $valor);
-
 			}
 
 			$tablaClientes = "clientes";
@@ -92,7 +95,7 @@ class ControladorVentas{
 			$traerCliente = ModeloClientes::mdlMostrarClientes($tablaClientes, $item, $valor);
 
 			$item1a = "compras";
-				
+
 			$valor1a = array_sum($totalProductosComprados) + $traerCliente["compras"];
 
 			$comprasCliente = ModeloClientes::mdlActualizarCliente($tablaClientes, $item1a, $valor1a, $valor);
@@ -103,47 +106,116 @@ class ControladorVentas{
 
 			$fecha = date('Y-m-d');
 			$hora = date('H:i:s');
-			$valor1b = $fecha.' '.$hora;
+			$valor1b = $fecha . ' ' . $hora;
 
 			$fechaCliente = ModeloClientes::mdlActualizarCliente($tablaClientes, $item1b, $valor1b, $valor);
 
 			/*=============================================
 			GUARDAR LA COMPRA
-			=============================================*/	
+			=============================================*/
 
 			$tabla = "ventas";
 
-			$datos = array("id_vendedor"=>$_POST["idVendedor"],
-						   "id_cliente"=>$_POST["seleccionarCliente"],
-						   "codigo"=>$_POST["nuevaVenta"],
-						   "productos"=>$_POST["listaProductos"],
-						   "impuesto"=>$_POST["nuevoPrecioImpuesto"],
-						   "neto"=>$_POST["nuevoPrecioNeto"],
-						   "total"=>$_POST["totalVenta"],
-						   "metodo_pago"=>$_POST["listaMetodoPago"]);
+			$datos = array(
+				"id_vendedor" => $_POST["idVendedor"],
+				"id_cliente" => $_POST["seleccionarCliente"],
+				"codigo" => $_POST["nuevaVenta"],
+				"productos" => $_POST["listaProductos"],
+				"impuesto" => $_POST["nuevoPrecioImpuesto"],
+				"neto" => $_POST["nuevoPrecioNeto"],
+				"total" => $_POST["totalVenta"],
+				"metodo_pago" => $_POST["listaMetodoPago"]
+			);
 
 			$respuesta = ModeloVentas::mdlIngresarVenta($tabla, $datos);
 
-			if($respuesta == "ok"){
+			if ($respuesta == "ok") {
 
-				var_dump('>>>>>>>respuesta '.$respuesta); 
+				// $impresora = "epson20";
 
- 				$impresora = "epson20";
+				// $conector = new WindowsPrintConnector($impresora);
+
+				// $imprimir = new Printer($conector);
+
+				// $imprimir -> text("Hola Mundo"."\n");
+
+				// $imprimir -> cut();
+
+				// $imprimir -> close();
+
+				$impresora = "POS-80C";
 
 				$conector = new WindowsPrintConnector($impresora);
 
-				$imprimir = new Printer($conector);
+				$printer = new Printer($conector);
 
-				$imprimir -> text("Hola Mundo"."\n");
+				$printer -> setJustification(Printer::JUSTIFY_CENTER);
 
-				$imprimir -> cut();
+				$printer -> text(date("Y-m-d H:i:s")."\n");//Fecha de la factura
 
-				$imprimir -> close();
+				$printer -> feed(1); //Alimentamos el papel 1 vez*/
 
+				$printer -> text("Inventory System"."\n");//Nombre de la empresa
+
+				$printer -> text("NIT: 71.759.963-9"."\n");//Nit de la empresa
+
+				$printer -> text("Dirección: Calle 44B 92-11"."\n");//Dirección de la empresa
+
+				$printer -> text("Teléfono: 300 786 52 49"."\n");//Teléfono de la empresa
+
+				$printer -> text("FACTURA N.".$_POST["nuevaVenta"]."\n");//Número de factura
+
+				$printer -> feed(1); //Alimentamos el papel 1 vez*/
+
+				$printer -> text("Cliente: ".$traerCliente["nombre"]."\n");//Nombre del cliente
+
+				$tablaVendedor = "usuarios";
+				$item = "id";
+				$valor = $_POST["idVendedor"];
+
+				$traerVendedor = ModeloUsuarios::mdlMostrarUsuarios($tablaVendedor, $item, $valor);
+
+				$printer -> text("Vendedor: ".$traerVendedor["nombre"]."\n");//Nombre del vendedor
+
+				$printer -> feed(1); //Alimentamos el papel 1 vez*/
+
+				foreach ($listaProductos as $key => $value) {
+
+					$printer->setJustification(Printer::JUSTIFY_LEFT);
+
+					$printer->text($value["descripcion"]."\n");//Nombre del producto
+
+					$printer->setJustification(Printer::JUSTIFY_RIGHT);
+
+					$printer->text("$ ".number_format($value["precio"],2)." Und x ".$value["cantidad"]." = $ ".number_format($value["total"],2)."\n");
+
+				}
+
+				$printer -> feed(1); //Alimentamos el papel 1 vez*/			
 				
+				$printer->text("NETO: $ ".number_format($_POST["nuevoPrecioNeto"],2)."\n"); //ahora va el neto
 
-	
-				echo'<script>
+				$printer->text("IMPUESTO: $ ".number_format($_POST["nuevoPrecioImpuesto"],2)."\n"); //ahora va el impuesto
+
+				$printer->text("--------\n");
+
+				$printer->text("TOTAL: $ ".number_format($_POST["totalVenta"],2)."\n"); //ahora va el total
+
+				$printer -> feed(1); //Alimentamos el papel 1 vez*/	
+
+				$printer->text("Muchas gracias por su compra"); //Podemos poner también un pie de página
+
+				$printer -> feed(3); //Alimentamos el papel 3 veces*/
+
+				$printer -> cut(); //Cortamos el papel, si la impresora tiene la opción
+
+				$printer -> pulse(); //Por medio de la impresora mandamos un pulso, es útil cuando hay cajón moneder
+
+				$printer -> close();
+
+
+
+				echo '<script>
 
 				localStorage.removeItem("rango");
 
@@ -161,20 +233,18 @@ class ControladorVentas{
 							})
 
 				</script>';
-
 			}
-
 		}
-
 	}
 
 	/*=============================================
 	EDITAR VENTA
 	=============================================*/
 
-	static public function ctrEditarVenta(){
+	static public function ctrEditarVenta()
+	{
 
-		if(isset($_POST["editarVenta"])){
+		if (isset($_POST["editarVenta"])) {
 
 			/*=============================================
 			FORMATEAR TABLA DE PRODUCTOS Y LA DE CLIENTES
@@ -190,19 +260,17 @@ class ControladorVentas{
 			REVISAR SI VIENE PRODUCTOS EDITADOS
 			=============================================*/
 
-			if($_POST["listaProductos"] == ""){
+			if ($_POST["listaProductos"] == "") {
 
 				$listaProductos = $traerVenta["productos"];
 				$cambioProducto = false;
-
-
-			}else{
+			} else {
 
 				$listaProductos = $_POST["listaProductos"];
 				$cambioProducto = true;
 			}
 
-			if($cambioProducto){
+			if ($cambioProducto) {
 
 				$productos =  json_decode($traerVenta["productos"], true);
 
@@ -211,7 +279,7 @@ class ControladorVentas{
 				foreach ($productos as $key => $value) {
 
 					array_push($totalProductosComprados, $value["cantidad"]);
-					
+
 					$tablaProductos = "productos";
 
 					$item = "id";
@@ -229,7 +297,6 @@ class ControladorVentas{
 					$valor1b = $value["cantidad"] + $traerProducto["stock"];
 
 					$nuevoStock = ModeloProductos::mdlActualizarProducto($tablaProductos, $item1b, $valor1b, $valor);
-
 				}
 
 				$tablaClientes = "clientes";
@@ -240,7 +307,7 @@ class ControladorVentas{
 				$traerCliente = ModeloClientes::mdlMostrarClientes($tablaClientes, $itemCliente, $valorCliente);
 
 				$item1a = "compras";
-				$valor1a = $traerCliente["compras"] - array_sum($totalProductosComprados);		
+				$valor1a = $traerCliente["compras"] - array_sum($totalProductosComprados);
 
 				$comprasCliente = ModeloClientes::mdlActualizarCliente($tablaClientes, $item1a, $valor1a, $valorCliente);
 
@@ -255,7 +322,7 @@ class ControladorVentas{
 				foreach ($listaProductos_2 as $key => $value) {
 
 					array_push($totalProductosComprados_2, $value["cantidad"]);
-					
+
 					$tablaProductos_2 = "productos";
 
 					$item_2 = "id";
@@ -273,7 +340,6 @@ class ControladorVentas{
 					$valor1b_2 = $value["stock"];
 
 					$nuevoStock_2 = ModeloProductos::mdlActualizarProducto($tablaProductos_2, $item1b_2, $valor1b_2, $valor_2);
-
 				}
 
 				$tablaClientes_2 = "clientes";
@@ -295,31 +361,32 @@ class ControladorVentas{
 
 				$fecha = date('Y-m-d');
 				$hora = date('H:i:s');
-				$valor1b_2 = $fecha.' '.$hora;
+				$valor1b_2 = $fecha . ' ' . $hora;
 
 				$fechaCliente_2 = ModeloClientes::mdlActualizarCliente($tablaClientes_2, $item1b_2, $valor1b_2, $valor_2);
-
 			}
 
 			/*=============================================
 			GUARDAR CAMBIOS DE LA COMPRA
-			=============================================*/	
+			=============================================*/
 
-			$datos = array("id_vendedor"=>$_POST["idVendedor"],
-						   "id_cliente"=>$_POST["seleccionarCliente"],
-						   "codigo"=>$_POST["editarVenta"],
-						   "productos"=>$listaProductos,
-						   "impuesto"=>$_POST["nuevoPrecioImpuesto"],
-						   "neto"=>$_POST["nuevoPrecioNeto"],
-						   "total"=>$_POST["totalVenta"],
-						   "metodo_pago"=>$_POST["listaMetodoPago"]);
+			$datos = array(
+				"id_vendedor" => $_POST["idVendedor"],
+				"id_cliente" => $_POST["seleccionarCliente"],
+				"codigo" => $_POST["editarVenta"],
+				"productos" => $listaProductos,
+				"impuesto" => $_POST["nuevoPrecioImpuesto"],
+				"neto" => $_POST["nuevoPrecioNeto"],
+				"total" => $_POST["totalVenta"],
+				"metodo_pago" => $_POST["listaMetodoPago"]
+			);
 
 
 			$respuesta = ModeloVentas::mdlEditarVenta($tabla, $datos);
 
-			if($respuesta == "ok"){
+			if ($respuesta == "ok") {
 
-				echo'<script>
+				echo '<script>
 
 				localStorage.removeItem("rango");
 
@@ -337,11 +404,8 @@ class ControladorVentas{
 							})
 
 				</script>';
-
 			}
-
 		}
-
 	}
 
 
@@ -349,9 +413,10 @@ class ControladorVentas{
 	ELIMINAR VENTA
 	=============================================*/
 
-	static public function ctrEliminarVenta(){
+	static public function ctrEliminarVenta()
+	{
 
-		if(isset($_GET["idVenta"])){
+		if (isset($_GET["idVenta"])) {
 
 			$tabla = "ventas";
 
@@ -374,44 +439,37 @@ class ControladorVentas{
 			$guardarFechas = array();
 
 			foreach ($traerVentas as $key => $value) {
-				
-				if($value["id_cliente"] == $traerVenta["id_cliente"]){
+
+				if ($value["id_cliente"] == $traerVenta["id_cliente"]) {
 
 					array_push($guardarFechas, $value["fecha"]);
-
 				}
-
 			}
 
-			if(count($guardarFechas) > 1){
+			if (count($guardarFechas) > 1) {
 
-				if($traerVenta["fecha"] > $guardarFechas[count($guardarFechas)-2]){
+				if ($traerVenta["fecha"] > $guardarFechas[count($guardarFechas) - 2]) {
 
 					$item = "ultima_compra";
-					$valor = $guardarFechas[count($guardarFechas)-2];
+					$valor = $guardarFechas[count($guardarFechas) - 2];
 					$valorIdCliente = $traerVenta["id_cliente"];
 
 					$comprasCliente = ModeloClientes::mdlActualizarCliente($tablaClientes, $item, $valor, $valorIdCliente);
-
-				}else{
+				} else {
 
 					$item = "ultima_compra";
-					$valor = $guardarFechas[count($guardarFechas)-1];
+					$valor = $guardarFechas[count($guardarFechas) - 1];
 					$valorIdCliente = $traerVenta["id_cliente"];
 
 					$comprasCliente = ModeloClientes::mdlActualizarCliente($tablaClientes, $item, $valor, $valorIdCliente);
-
 				}
-
-
-			}else{
+			} else {
 
 				$item = "ultima_compra";
 				$valor = "0000-00-00 00:00:00";
 				$valorIdCliente = $traerVenta["id_cliente"];
 
 				$comprasCliente = ModeloClientes::mdlActualizarCliente($tablaClientes, $item, $valor, $valorIdCliente);
-
 			}
 
 			/*=============================================
@@ -425,7 +483,7 @@ class ControladorVentas{
 			foreach ($productos as $key => $value) {
 
 				array_push($totalProductosComprados, $value["cantidad"]);
-				
+
 				$tablaProductos = "productos";
 
 				$item = "id";
@@ -443,7 +501,6 @@ class ControladorVentas{
 				$valor1b = $value["cantidad"] + $traerProducto["stock"];
 
 				$nuevoStock = ModeloProductos::mdlActualizarProducto($tablaProductos, $item1b, $valor1b, $valor);
-
 			}
 
 			$tablaClientes = "clientes";
@@ -464,9 +521,9 @@ class ControladorVentas{
 
 			$respuesta = ModeloVentas::mdlEliminarVenta($tabla, $_GET["idVenta"]);
 
-			if($respuesta == "ok"){
+			if ($respuesta == "ok") {
 
-				echo'<script>
+				echo '<script>
 
 				swal({
 					  type: "success",
@@ -482,47 +539,44 @@ class ControladorVentas{
 							})
 
 				</script>';
-
-			}		
+			}
 		}
-
 	}
 
 	/*=============================================
 	RANGO FECHAS
-	=============================================*/	
+	=============================================*/
 
-	static public function ctrRangoFechasVentas($fechaInicial, $fechaFinal){
+	static public function ctrRangoFechasVentas($fechaInicial, $fechaFinal)
+	{
 
 		$tabla = "ventas";
 
 		$respuesta = ModeloVentas::mdlRangoFechasVentas($tabla, $fechaInicial, $fechaFinal);
 
 		return $respuesta;
-		
 	}
 
 	/*=============================================
 	DESCARGAR EXCEL
 	=============================================*/
 
-	public function ctrDescargarReporte(){
+	public function ctrDescargarReporte()
+	{
 
-		if(isset($_GET["reporte"])){
+		if (isset($_GET["reporte"])) {
 
 			$tabla = "ventas";
 
-			if(isset($_GET["fechaInicial"]) && isset($_GET["fechaFinal"])){
+			if (isset($_GET["fechaInicial"]) && isset($_GET["fechaFinal"])) {
 
 				$ventas = ModeloVentas::mdlRangoFechasVentas($tabla, $_GET["fechaInicial"], $_GET["fechaFinal"]);
-
-			}else{
+			} else {
 
 				$item = null;
 				$valor = null;
 
 				$ventas = ModeloVentas::mdlMostrarVentas($tabla, $item, $valor);
-
 			}
 
 
@@ -530,18 +584,18 @@ class ControladorVentas{
 			CREAMOS EL ARCHIVO DE EXCEL
 			=============================================*/
 
-			$Name = $_GET["reporte"].'.xls';
+			$Name = $_GET["reporte"] . '.xls';
 
 			header('Expires: 0');
 			header('Cache-control: private');
 			header("Content-type: application/vnd.ms-excel"); // Archivo de Excel
-			header("Cache-Control: cache, must-revalidate"); 
+			header("Cache-Control: cache, must-revalidate");
 			header('Content-Description: File Transfer');
-			header('Last-Modified: '.date('D, d M Y H:i:s'));
-			header("Pragma: public"); 
-			header('Content-Disposition:; filename="'.$Name.'"');
+			header('Last-Modified: ' . date('D, d M Y H:i:s'));
+			header("Pragma: public");
+			header('Content-Disposition:; filename="' . $Name . '"');
 			header("Content-Transfer-Encoding: binary");
-		
+
 			echo utf8_decode("<table border='0'> 
 
 					<tr> 
@@ -557,48 +611,43 @@ class ControladorVentas{
 					<td style='font-weight:bold; border:1px solid #eee;'>FECHA</td>		
 					</tr>");
 
-			foreach ($ventas as $row => $item){
+			foreach ($ventas as $row => $item) {
 
 				$cliente = ControladorClientes::ctrMostrarClientes("id", $item["id_cliente"]);
 				$vendedor = ControladorUsuarios::ctrMostrarUsuarios("id", $item["id_vendedor"]);
 
-			 echo utf8_decode("<tr>
-			 			<td style='border:1px solid #eee;'>".$item["codigo"]."</td> 
-			 			<td style='border:1px solid #eee;'>".$cliente["nombre"]."</td>
-			 			<td style='border:1px solid #eee;'>".$vendedor["nombre"]."</td>
+				echo utf8_decode("<tr>
+			 			<td style='border:1px solid #eee;'>" . $item["codigo"] . "</td> 
+			 			<td style='border:1px solid #eee;'>" . $cliente["nombre"] . "</td>
+			 			<td style='border:1px solid #eee;'>" . $vendedor["nombre"] . "</td>
 			 			<td style='border:1px solid #eee;'>");
 
-			 	$productos =  json_decode($item["productos"], true);
+				$productos =  json_decode($item["productos"], true);
 
-			 	foreach ($productos as $key => $valueProductos) {
-			 			
-			 			echo utf8_decode($valueProductos["cantidad"]."<br>");
-			 		}
+				foreach ($productos as $key => $valueProductos) {
 
-			 	echo utf8_decode("</td><td style='border:1px solid #eee;'>");	
+					echo utf8_decode($valueProductos["cantidad"] . "<br>");
+				}
 
-		 		foreach ($productos as $key => $valueProductos) {
-			 			
-		 			echo utf8_decode($valueProductos["descripcion"]."<br>");
-		 		
-		 		}
+				echo utf8_decode("</td><td style='border:1px solid #eee;'>");
 
-		 		echo utf8_decode("</td>
-					<td style='border:1px solid #eee;'>$ ".number_format($item["impuesto"],2)."</td>
-					<td style='border:1px solid #eee;'>$ ".number_format($item["neto"],2)."</td>	
-					<td style='border:1px solid #eee;'>$ ".number_format($item["total"],2)."</td>
-					<td style='border:1px solid #eee;'>".$item["metodo_pago"]."</td>
-					<td style='border:1px solid #eee;'>".substr($item["fecha"],0,10)."</td>		
+				foreach ($productos as $key => $valueProductos) {
+
+					echo utf8_decode($valueProductos["descripcion"] . "<br>");
+				}
+
+				echo utf8_decode("</td>
+					<td style='border:1px solid #eee;'>$ " . number_format($item["impuesto"], 2) . "</td>
+					<td style='border:1px solid #eee;'>$ " . number_format($item["neto"], 2) . "</td>	
+					<td style='border:1px solid #eee;'>$ " . number_format($item["total"], 2) . "</td>
+					<td style='border:1px solid #eee;'>" . $item["metodo_pago"] . "</td>
+					<td style='border:1px solid #eee;'>" . substr($item["fecha"], 0, 10) . "</td>		
 		 			</tr>");
-
-
 			}
 
 
 			echo "</table>";
-
 		}
-
 	}
 
 
@@ -606,23 +655,24 @@ class ControladorVentas{
 	SUMA TOTAL VENTAS
 	=============================================*/
 
-	public function ctrSumaTotalVentas(){
+	public function ctrSumaTotalVentas()
+	{
 
 		$tabla = "ventas";
 
 		$respuesta = ModeloVentas::mdlSumaTotalVentas($tabla);
 
 		return $respuesta;
-
 	}
 
 	/*=============================================
 	DESCARGAR XML
 	=============================================*/
 
-	static public function ctrDescargarXML(){
+	static public function ctrDescargarXML()
+	{
 
-		if(isset($_GET["xml"])){
+		if (isset($_GET["xml"])) {
 
 
 			$tabla = "ventas";
@@ -655,14 +705,14 @@ class ControladorVentas{
 
 			$objetoXML = new XMLWriter();
 
-			$objetoXML->openURI($_GET["xml"].".xml"); //Creación del archivo XML
+			$objetoXML->openURI($_GET["xml"] . ".xml"); //Creación del archivo XML
 
 			$objetoXML->setIndent(true); //recibe un valor booleano para establecer si los distintos niveles de nodos XML deben quedar indentados o no.
 
 			$objetoXML->setIndentString("\t"); // carácter \t, que corresponde a una tabulación
 
-			$objetoXML->startDocument('1.0', 'utf-8');// Inicio del documento
-			
+			$objetoXML->startDocument('1.0', 'utf-8'); // Inicio del documento
+
 			// $objetoXML->startElement("etiquetaPrincipal");// Inicio del nodo raíz
 
 			// $objetoXML->writeAttribute("atributoEtiquetaPPal", "valor atributo etiqueta PPal"); // Atributo etiqueta principal
@@ -672,9 +722,9 @@ class ControladorVentas{
 			// 		$objetoXML->writeAttribute("atributoEtiquetaInterna", "valor atributo etiqueta Interna"); // Atributo etiqueta interna
 
 			// 		$objetoXML->text("Texto interno");// Inicio del nodo hijo
-			
+
 			// 	$objetoXML->endElement(); // Final del nodo hijo
-			
+
 			// $objetoXML->endElement(); // Final del nodo raíz
 
 
@@ -683,12 +733,11 @@ class ControladorVentas{
 			$objetoXML->writeRaw('<ext:UBLExtensions>');
 
 			foreach ($listaProductos as $key => $value) {
-				
-				$objetoXML->text($value["descripcion"].", ");
-			
+
+				$objetoXML->text($value["descripcion"] . ", ");
 			}
 
-			
+
 
 			$objetoXML->writeRaw('</ext:UBLExtensions>');
 
@@ -696,9 +745,7 @@ class ControladorVentas{
 
 			$objetoXML->endDocument(); // Final del documento
 
-			return true;	
+			return true;
 		}
-
 	}
-
 }
